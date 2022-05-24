@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.6">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
   <POU Name="CoE_communication_handler" Id="{0f90cda2-01ac-0568-2617-d7ad811e297b}" SpecialFunc="None">
     <Declaration><![CDATA[(**
 This function bock handles ADS read and write requests.
@@ -23,7 +23,7 @@ VAR
 	
 	_readState		: INT;
 	_executeRead	: BOOL;
-	_readBuffer		: CoE_buffer_type_cast_union;
+	_readBuffer		: Tc2_Utilities.T_Arg;
 	
 	// ==  write  ================================== 
 	done_writing_coe		: f_trig;
@@ -34,7 +34,7 @@ VAR
 	
 	_writeState			: INT;
 	_executeWrite		: BOOL;
-	_writeBuffer		: CoE_buffer_type_cast_union;
+	_writeBuffer		: Tc2_Utilities.T_Arg;
 
 END_VAR]]></Declaration>
     <Implementation>
@@ -50,7 +50,7 @@ CASE _readState OF
 
 	10:
 		IF done_reading_coe.q THEN
-			CoE_property_to_read.handle_read_callback(pt_buffer:=ADR(_readBuffer), errId:=coe_read.nErrId);
+			CoE_property_to_read.handle_read_callback(pt_buffer:=_readBuffer.pData, errId:=coe_read.nErrId);
 			_executeRead:=FALSE;
 			_readState := 0;
 		END_IF
@@ -59,13 +59,14 @@ ELSE
 END_CASE
 
 IF CoE_property_to_read <> 0 THEN
+    _readBuffer.eType := CoE_property_to_read.PropertyType;
 	coe_read(
 		sNetId		:= amsNetId, 
 		nSlaveAddr	:= CoE_property_to_read.SlaveAddress, 
 		nSubIndex	:= CoE_property_to_read.SubIndex, 
 		nIndex		:= CoE_property_to_read.Index, 
-		pDstBuf		:= ADR(_readBuffer._values), 
-		cbBufLen	:= SIZEOF(_readBuffer._values), 
+		pDstBuf		:= _readBuffer.pData, 
+		cbBufLen	:= _readBuffer.cbLen, 
 		bExecute	:= _executeRead, 
 		tTimeout	:= , 
 		bBusy		=> , 
@@ -104,7 +105,7 @@ IF CoE_property_to_write <> 0 THEN
 		nSlaveAddr	:= CoE_property_to_write.SlaveAddress, 
 		nSubIndex	:= CoE_property_to_write.SubIndex, 
 		nIndex		:= CoE_property_to_write.Index, 
-		pSrcBuf		:= ADR(_writeBuffer._values), 
+		pSrcBuf		:= _writeBuffer.pData, 
 		cbBufLen	:= CoE_property_to_write.dataTypeSize, 
 		bExecute	:= _executeWrite, 
 		tTimeout	:= , 

@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.6">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
   <POU Name="CoE_property" Id="{7290e4d7-edb9-0644-02c0-672d2dd6d3bf}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK ABSTRACT CoE_property IMPLEMENTS I_CoE_property
 VAR_INPUT
@@ -9,10 +9,11 @@ END_VAR
 VAR
 	_SubIndex 		: BYTE;
 	_Index			: WORD;
+    _propertyType : Tc2_Utilities.E_ArgType := Tc2_Utilities.ARGTYPE_UNKNOWN;
 	_init_done		: BOOL;
 	_neg_replay		: f_trig;
 	_SlaveAddress	: WORD;
-	_propertyType	: UINT;
+	_propertyPullMode	: UINT;
 	_pollingInterval: TIME;
 	_I_CoE_communication_handler: I_CoE_communication_handler;
 	
@@ -20,7 +21,8 @@ VAR
 	_write_errId	: UDINT;
 	_init_state		: INT;
 	
-	_valueToWrite 	: CoE_buffer_type_cast_union;
+	_valueToWrite 	: Tc2_Utilities.T_Arg;
+    _value : Tc2_Utilities.T_Arg;
 
 	pollingTimer: ton;
 	
@@ -28,7 +30,7 @@ VAR
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[CASE _propertyType OF 
+      <ST><![CDATA[CASE _propertyPullMode OF 
 	0:  // cashed 
 		;
 	
@@ -74,14 +76,14 @@ END_VAR
       </Set>
     </Property>
     <Property Name="dataTypeSize" Id="{c8c62b6f-a562-0288-24b7-a97cdf714276}">
-      <Declaration><![CDATA[PROPERTY dataTypeSize : UINT
+      <Declaration><![CDATA[PROPERTY dataTypeSize : UDINT
 ]]></Declaration>
       <Get Name="Get" Id="{82523ad0-d4b6-0490-05f6-e1f39508487e}">
         <Declaration><![CDATA[VAR
 END_VAR
 ]]></Declaration>
         <Implementation>
-          <ST><![CDATA[]]></ST>
+          <ST><![CDATA[dataTypeSize := _value.cbLen;]]></ST>
         </Implementation>
       </Get>
     </Property>
@@ -92,8 +94,9 @@ VAR_INPUT
 	bInCopyCode 			: BOOL;  // if TRUE, the instance afterwards gets moved into the copy code (online change)
 	Index					: WORD;
 	SubIndex				: BYTE;
+    propertyType : Tc2_Utilities.E_ArgType;
 	writable				: BOOL;
-	propertyType			: UINT;
+	propertyPullMode			: UINT;
 	pollingInterval 		: TIME;
 END_VAR
 ]]></Declaration>
@@ -101,19 +104,44 @@ END_VAR
         <ST><![CDATA[_Index:=Index;
 _SubIndex:=SubIndex;
 _propertyType:=propertyType;
+_propertyPullMode:=propertyPullMode;
 _pollingInterval:=pollingInterval;
 
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="get_value" Id="{284cb2f0-d566-0231-18a9-fcedb75b024a}">
+      <Declaration><![CDATA[METHOD get_value : BOOL
+VAR_OUTPUT
+	value : Tc2_Utilities.T_Arg ;
+	errId : UDINT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF init_done THEN
+        IF _value.eType=THIS^.PropertyType THEN
+        value := _value;
+        get_value := TRUE;
+    ELSE
+        errId := 400;
+        get_value := FALSE;
+	END_IF
+ELSE
+	errId := 2;
+	get_value := FALSE;
+END_IF
 ]]></ST>
       </Implementation>
     </Method>
     <Method Name="handle_read_callback" Id="{358e0672-e92e-0990-3d90-6a809c7ca1fb}">
       <Declaration><![CDATA[METHOD handle_read_callback : BOOL
 VAR_INPUT
-	pt_buffer : POINTER TO CoE_buffer_type_cast_union;
+	pt_buffer : POINTER TO Tc2_Utilities.T_Arg;
 	errId : UDINT;
 END_VAR]]></Declaration>
       <Implementation>
-        <ST><![CDATA[
+        <ST><![CDATA[_value := pt_buffer^;
+_init_done:=TRUE;
+_read_errId:=errId;
 
 
 
@@ -126,7 +154,7 @@ END_VAR]]></Declaration>
     <Method Name="handle_write_callback" Id="{f74faa57-7cc3-0d8b-3ecc-005cac59e305}">
       <Declaration><![CDATA[METHOD handle_write_callback : BOOL
 VAR_INPUT
-	errId	: UDINT;
+	errId : UDINT;
 END_VAR
 ]]></Declaration>
       <Implementation>
@@ -168,6 +196,25 @@ END_VAR
         </Implementation>
       </Get>
     </Property>
+    <Property Name="PropertyType" Id="{981985e5-5243-0af1-2edf-ff98d61ea57c}">
+      <Declaration><![CDATA[PROPERTY PropertyType : E_ArgType]]></Declaration>
+      <Get Name="Get" Id="{95831807-d192-09ba-398a-33570f2c0795}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[PropertyType:=_propertyType;]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{9ab6c44b-716f-0962-1ab5-2eb4ba468e13}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[_propertyType:=PropertyType;]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
     <Method Name="reinit" Id="{30436167-4235-0089-245f-f4e6c137a925}">
       <Declaration><![CDATA[METHOD reinit : BOOL
 VAR_OUTPUT
@@ -199,6 +246,28 @@ END_CASE]]></ST>
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[THIS^();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="set_value" Id="{d5d61d95-3742-077a-3f8e-b7ed44bf5f79}">
+      <Declaration><![CDATA[METHOD set_value : BOOL
+VAR_INPUT
+	value : Tc2_Utilities.T_Arg ;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF value.eType=THIS^.PropertyType THEN
+    _valueToWrite := value;
+    IF THIS^._I_CoE_communication_handler <> 0 THEN 
+        THIS^._I_CoE_communication_handler.add_write_request(THIS^);
+        set_value := TRUE;
+    ELSE
+        set_value := FALSE;
+        errId:=1;
+    END_IF
+ELSE
+    set_value := FALSE;
+    errId := 400;
+END_IF
 ]]></ST>
       </Implementation>
     </Method>
@@ -245,7 +314,7 @@ END_VAR
       </Set>
     </Property>
     <Property Name="valueToWrite" Id="{f671e68f-34dc-08aa-3fa7-0dbc6c977bb5}">
-      <Declaration><![CDATA[PROPERTY valueToWrite : CoE_buffer_type_cast_union
+      <Declaration><![CDATA[PROPERTY valueToWrite : Tc2_Utilities.T_Arg
 ]]></Declaration>
       <Get Name="Get" Id="{dae09c31-b983-0ff6-240f-1eb3ae3a0c98}">
         <Declaration><![CDATA[VAR

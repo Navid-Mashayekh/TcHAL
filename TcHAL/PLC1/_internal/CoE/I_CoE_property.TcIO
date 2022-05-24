@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.6">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
   <Itf Name="I_CoE_property" Id="{7c1857e7-bee5-07f1-0b20-6cf74deec630}">
     <Declaration><![CDATA[INTERFACE I_CoE_property
 ]]></Declaration>
@@ -13,16 +13,24 @@
       </Set>
     </Property>
     <Property Name="dataTypeSize" Id="{de387db6-9200-03b5-04ce-c696adad2786}">
-      <Declaration><![CDATA[PROPERTY dataTypeSize : uint]]></Declaration>
+      <Declaration><![CDATA[PROPERTY dataTypeSize : UDINT]]></Declaration>
       <Get Name="Get" Id="{d1bf6bb7-1fae-0c67-2a89-9b9671a3ed40}">
         <Declaration><![CDATA[]]></Declaration>
       </Get>
     </Property>
+    <Method Name="get_value" Id="{a61ec230-9e45-0e05-0075-8d4d5f019271}">
+      <Declaration><![CDATA[METHOD get_value : BOOL
+VAR_OUTPUT
+    value : Tc2_Utilities.T_Arg ;
+	errId : UDINT;
+END_VAR
+]]></Declaration>
+    </Method>
     <Method Name="handle_read_callback" Id="{f97bb7a1-54c0-0520-2966-3954b2ce9d96}">
       <Declaration><![CDATA[METHOD handle_read_callback : BOOL
 VAR_INPUT
-	pt_buffer : POINTER TO CoE_buffer_type_cast_union;
-	errId: UDINT;
+	pt_buffer : POINTER TO Tc2_Utilities.T_Arg;
+	errId : UDINT;
 END_VAR]]></Declaration>
     </Method>
     <Method Name="handle_write_callback" Id="{4711a839-42f9-0006-20a7-8f6c7c920378}">
@@ -44,6 +52,15 @@ END_VAR
         <Declaration><![CDATA[]]></Declaration>
       </Get>
     </Property>
+    <Property Name="PropertyType" Id="{5b4ff985-3b5b-043d-0f69-1d2015775354}">
+      <Declaration><![CDATA[PROPERTY PropertyType : E_ArgType]]></Declaration>
+      <Get Name="Get" Id="{3b990a39-4f53-0970-37d3-f413b06d4805}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Get>
+      <Set Name="Set" Id="{c3c90df5-9d83-0e15-37d7-c1d8916c5ec5}">
+        <Declaration><![CDATA[]]></Declaration>
+      </Set>
+    </Property>
     <Method Name="reinit" Id="{e0cf676b-bdca-01f3-3233-1894d274fc8f}">
       <Declaration><![CDATA[(**
 This method is initializing or reinitializing the property and returns TRUE when this is done.
@@ -58,6 +75,13 @@ END_VAR
     <Method Name="run" Id="{f131b58c-bde9-09c5-32c1-30fd69bb6db7}">
       <Declaration><![CDATA[METHOD run : BOOL
 VAR_INPUT
+END_VAR
+]]></Declaration>
+    </Method>
+    <Method Name="set_value" Id="{494becd6-378b-0798-2ac9-1d7d375f7b0f}">
+      <Declaration><![CDATA[METHOD set_value : BOOL
+VAR_INPUT
+    value : Tc2_Utilities.T_Arg ;
 END_VAR
 ]]></Declaration>
     </Method>
@@ -79,7 +103,7 @@ END_VAR
       </Get>
     </Property>
     <Property Name="valueToWrite" Id="{3db24a19-dda7-0bad-0dfa-160770f43209}">
-      <Declaration><![CDATA[PROPERTY valueToWrite : CoE_buffer_type_cast_union]]></Declaration>
+      <Declaration><![CDATA[PROPERTY valueToWrite : Tc2_Utilities.T_Arg]]></Declaration>
       <Get Name="Get" Id="{1b5edc05-7c6e-0691-3b7b-2ed784d430c5}">
         <Declaration><![CDATA[]]></Declaration>
       </Get>

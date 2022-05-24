@@ -1,3 +1,4 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <FileVersion>1.0.0.0</FileVersion>
@@ -205,9 +206,6 @@
     <Compile Include="_internal\CoE\buffer\ring_buffer_CoE_read.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="_internal\CoE\CoE_buffer_type_cast_union.TcDUT">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="_internal\CoE\CoE_communication_handler.TcPOU">
       <SubType>Code</SubType>
     </Compile>
@@ -227,27 +225,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="_internal\CoE\properties\CoE_property.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="_internal\CoE\properties\CoE_property_bool.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="_internal\CoE\properties\CoE_property_dint.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="_internal\CoE\properties\CoE_property_int.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="_internal\CoE\properties\CoE_property_string.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="_internal\CoE\properties\CoE_property_udint.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="_internal\CoE\properties\CoE_property_uint.TcPOU">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="_internal\CoE\properties\CoE_property_usint.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="_internal\I_device_control.TcIO">
@@ -306,6 +283,10 @@
     <PlaceholderReference Include="Tc2_System">
       <DefaultResolution>Tc2_System, * (Beckhoff Automation GmbH)</DefaultResolution>
       <Namespace>Tc2_System</Namespace>
+    </PlaceholderReference>
+    <PlaceholderReference Include="Tc2_Utilities">
+      <DefaultResolution>Tc2_Utilities, * (Beckhoff Automation GmbH)</DefaultResolution>
+      <Namespace>Tc2_Utilities</Namespace>
     </PlaceholderReference>
     <PlaceholderReference Include="Tc3_Module">
       <DefaultResolution>Tc3_Module, * (Beckhoff Automation GmbH)</DefaultResolution>

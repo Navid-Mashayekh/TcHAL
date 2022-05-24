@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.6">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
   <POU Name="AI_Temperature_Channel" Id="{6bbe721b-eb3d-04ba-01ae-2009e4a41bd1}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK AI_Temperature_Channel IMPLEMENTS I_AI_Temperature, I_AI_percentage
 VAR_INPUT
@@ -24,17 +24,17 @@ VAR
     _CoE_channel_offset     : INT;
     index_1 				: WORD:= 16#8000 + INT_TO_WORD(_CoE_channel_offset);	
     // ====  CoE properties  ===========
-	_p_Enable_user_scale    		: CoE_property_bool(Index:=index_1 , SubIndex:=1, writable:=TRUE, propertyType:=0, pollingInterval:=T#5S);
-	_p_Presentation 				: CoE_property_usint(Index:=index_1 , SubIndex:=2, writable:=TRUE, propertyType:=0, pollingInterval:=T#5S);			// DT0800EN03
-	_p_Watchdog 					: CoE_property_usint(Index:=index_1 , SubIndex:=5, writable:=TRUE, propertyType:=0, pollingInterval:=T#5S);			// DT0801EN02
-	_p_Enable_user_calibration  	: CoE_property_bool(Index:=index_1 , SubIndex:=7, writable:=TRUE, propertyType:=0, pollingInterval:=T#5S);
-	_p_Enable_vendor_calibration    : CoE_property_bool(Index:=index_1 , SubIndex:=8, writable:=TRUE, propertyType:=0, pollingInterval:=T#5S);
-	_p_Offset   					: CoE_property_int(Index:=index_1 , SubIndex:=17, writable:=TRUE, propertyType:=0, pollingInterval:=T#5S);
-	_p_Gain 						: CoE_property_dint(Index:=index_1 , SubIndex:=18, writable:=TRUE, propertyType:=0, pollingInterval:=T#5S);
-	_p_Default_output   			: CoE_property_int(Index:=index_1 , SubIndex:=19, writable:=TRUE, propertyType:=0, pollingInterval:=T#5S);
-	_p_Default_output_ramp  		: CoE_property_uint(Index:=index_1 , SubIndex:=20, writable:=TRUE, propertyType:=0, pollingInterval:=T#5S);
-	_p_User_calibration_offset  	: CoE_property_int(Index:=index_1 , SubIndex:=21, writable:=TRUE, propertyType:=0, pollingInterval:=T#5S);
-	_p_User_calibration_gain    	: CoE_property_uint(Index:=index_1 , SubIndex:=22, writable:=TRUE, propertyType:=0, pollingInterval:=T#5S);
+	_p_Enable_user_scale    		: CoE_property(Index:=index_1 , SubIndex:=1, PropertyType:=Tc2_Utilities.ARGTYPE_BOOL, writable:=TRUE, propertyType:=0, pollingInterval:=T#5S);
+	_p_Presentation 				: CoE_property(Index:=index_1 , SubIndex:=2, PropertyType:=Tc2_Utilities.ARGTYPE_USINT, writable:=TRUE, propertyType:=0, pollingInterval:=T#5S);			// DT0800EN03
+	_p_Watchdog 					: CoE_property(Index:=index_1 , SubIndex:=5, PropertyType:=Tc2_Utilities.ARGTYPE_USINT, writable:=TRUE, propertyType:=0, pollingInterval:=T#5S);			// DT0801EN02
+	_p_Enable_user_calibration  	: CoE_property(Index:=index_1 , SubIndex:=7, PropertyType:=Tc2_Utilities.ARGTYPE_BOOL, writable:=TRUE, propertyType:=0, pollingInterval:=T#5S);
+	_p_Enable_vendor_calibration    : CoE_property(Index:=index_1 , SubIndex:=8, PropertyType:=Tc2_Utilities.ARGTYPE_BOOL, writable:=TRUE, propertyType:=0, pollingInterval:=T#5S);
+	_p_Offset   					: CoE_property(Index:=index_1 , SubIndex:=17, PropertyType:=Tc2_Utilities.ARGTYPE_INT, writable:=TRUE, propertyType:=0, pollingInterval:=T#5S);
+	_p_Gain 						: CoE_property(Index:=index_1 , SubIndex:=18, PropertyType:=Tc2_Utilities.ARGTYPE_DINT, writable:=TRUE, propertyType:=0, pollingInterval:=T#5S);
+	_p_Default_output   			: CoE_property(Index:=index_1 , SubIndex:=19, PropertyType:=Tc2_Utilities.ARGTYPE_INT, writable:=TRUE, propertyType:=0, pollingInterval:=T#5S);
+	_p_Default_output_ramp  		: CoE_property(Index:=index_1 , SubIndex:=20, PropertyType:=Tc2_Utilities.ARGTYPE_UINT, writable:=TRUE, propertyType:=0, pollingInterval:=T#5S);
+	_p_User_calibration_offset  	: CoE_property(Index:=index_1 , SubIndex:=21, PropertyType:=Tc2_Utilities.ARGTYPE_INT, writable:=TRUE, propertyType:=0, pollingInterval:=T#5S);
+	_p_User_calibration_gain    	: CoE_property(Index:=index_1 , SubIndex:=22, PropertyType:=Tc2_Utilities.ARGTYPE_UINT, writable:=TRUE, propertyType:=0, pollingInterval:=T#5S);
 	// ==============
 	_properties  : ARRAY[1..11]OF I_CoE_property:=[
 		_p_Enable_user_scale, _p_Presentation, _p_Watchdog, _p_Enable_user_calibration, _p_Enable_vendor_calibration, _p_Offset,
@@ -116,131 +116,184 @@ END_CASE
     </Method>
     <Method Name="get_Default_output" Id="{7427f853-14c9-0a2e-2baa-c4fa4c9b0918}" FolderPath="config\">
       <Declaration><![CDATA[METHOD get_Default_output : BOOL
+VAR
+    targ_value : Tc2_Utilities.T_Arg;
+END_VAR
 VAR_OUTPUT
 	value	: INT;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[get_Default_output:=_p_Default_output.get_value(value=>value, errId => );
+        <ST><![CDATA[get_Default_output:=_p_Default_output.get_value(value=>targ_value, errId => );
+IF get_Default_output THEN
+    MEMCPY(ADR(value), targ_value.pData, targ_value.cbLen);
+END_IF
 ]]></ST>
       </Implementation>
     </Method>
     <Method Name="get_Default_output_ramp" Id="{fac8043d-224a-046c-3bc5-7ccc20cb6905}" FolderPath="config\">
       <Declaration><![CDATA[METHOD get_Default_output_ramp : BOOL
+VAR
+    targ_value : Tc2_Utilities.T_Arg;
+END_VAR
 VAR_OUTPUT
 	value	: UINT;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[get_Default_output_ramp:=_p_Default_output_ramp.get_value(value=>value, errId => );
-]]></ST>
+        <ST><![CDATA[get_Default_output_ramp:=_p_Default_output_ramp.get_value(value=>targ_value, errId => );
+IF get_Default_output_ramp THEN
+    MEMCPY(ADR(value), targ_value.pData, targ_value.cbLen);
+END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="get_Enable_user_calibration" Id="{253a4690-52c4-0a69-1f9e-fd2e16030921}" FolderPath="config\">
       <Declaration><![CDATA[METHOD get_Enable_user_calibration : BOOL
+VAR
+    targ_value : Tc2_Utilities.T_Arg;
+END_VAR
 VAR_OUTPUT
 	value	: BOOL;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[get_Enable_user_calibration:=_p_Enable_user_calibration.get_value(value=>value, errId => );
-]]></ST>
+        <ST><![CDATA[get_Enable_user_calibration:=_p_Enable_user_calibration.get_value(value=>targ_value, errId => );
+IF get_Enable_user_calibration THEN
+    MEMCPY(ADR(value), targ_value.pData, targ_value.cbLen);
+END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="get_Enable_user_scale" Id="{c8577104-d830-03d1-3d11-85cfcfe93a61}" FolderPath="config\">
       <Declaration><![CDATA[METHOD get_Enable_user_scale : BOOL
+VAR
+    targ_value : Tc2_Utilities.T_Arg;
+END_VAR
 VAR_OUTPUT
 	value	: BOOL;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[get_Enable_user_scale:=_p_Enable_user_scale.get_value(value=>value, errId => );
-]]></ST>
+        <ST><![CDATA[get_Enable_user_scale:=_p_Enable_user_scale.get_value(value=>targ_value, errId => );
+IF get_Enable_user_scale THEN
+    MEMCPY(ADR(value), targ_value.pData, targ_value.cbLen);
+END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="get_Enable_vendor_calibration" Id="{f1657459-6fc9-0987-363b-f57e47b889b2}" FolderPath="config\">
       <Declaration><![CDATA[METHOD get_Enable_vendor_calibration : BOOL
+VAR
+    targ_value : Tc2_Utilities.T_Arg;
+END_VAR
 VAR_OUTPUT
 	value	: BOOL;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[get_Enable_vendor_calibration:=_p_Enable_vendor_calibration.get_value(value=>value, errId => );
-]]></ST>
+        <ST><![CDATA[get_Enable_vendor_calibration:=_p_Enable_vendor_calibration.get_value(value=>targ_value, errId => );
+IF get_Enable_vendor_calibration THEN
+    MEMCPY(ADR(value), targ_value.pData, targ_value.cbLen);
+END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="get_Gain" Id="{0378892b-0be5-0128-151d-c53069676214}" FolderPath="config\">
       <Declaration><![CDATA[METHOD get_Gain : BOOL
+VAR
+    targ_value : Tc2_Utilities.T_Arg;
+END_VAR
 VAR_OUTPUT
 	value	: DINT;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[get_Gain:=_p_Gain.get_value(value=>value, errId => );
-
+        <ST><![CDATA[get_Gain:=_p_Gain.get_value(value=>targ_value, errId => );
+IF get_Gain THEN
+    MEMCPY(ADR(value), targ_value.pData, targ_value.cbLen);
+END_IF
 ]]></ST>
       </Implementation>
     </Method>
     <Method Name="get_Offset" Id="{875fb64f-aa95-0b6c-18b9-f83d0a09f168}" FolderPath="config\">
       <Declaration><![CDATA[METHOD get_Offset : BOOL
+VAR
+    targ_value : Tc2_Utilities.T_Arg;
+END_VAR
 VAR_OUTPUT
 	value	: INT;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[get_Offset:=_p_Offset.get_value(value=>value, errId => );
-]]></ST>
+        <ST><![CDATA[get_Offset:=_p_Offset.get_value(value=>targ_value, errId => );
+IF get_Offset THEN
+    MEMCPY(ADR(value), targ_value.pData, targ_value.cbLen);
+END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="get_Presentation" Id="{013ad0f9-4b38-06b8-2755-04279490b138}" FolderPath="config\">
       <Declaration><![CDATA[METHOD get_Presentation : BOOL
+VAR
+	usint_value: USINT;
+    targ_value : Tc2_Utilities.T_Arg;
+END_VAR
 VAR_OUTPUT
 	value	: ENU_DT0801EN03;
 END_VAR
-
-VAR
-	tmp: USINT;
-END_VAR]]></Declaration>
+]]></Declaration>
       <Implementation>
-        <ST><![CDATA[get_Presentation:=_p_Presentation.get_value(value=>tmp, errId => );
-value:=USINT_TO_INT(tmp);
+        <ST><![CDATA[get_Presentation:=_p_Presentation.get_value(value=>targ_value, errId => );
+IF get_Presentation THEN
+    MEMCPY(ADR(usint_value), targ_value.pData, targ_value.cbLen);
+    value:=USINT_TO_INT(usint_value);
+END_IF
 ]]></ST>
       </Implementation>
     </Method>
     <Method Name="get_User_calibration_gain" Id="{48d2e637-48d9-0313-0747-ae61d5d29f7c}" FolderPath="config\">
       <Declaration><![CDATA[METHOD get_User_calibration_gain : BOOL
+VAR
+    targ_value : Tc2_Utilities.T_Arg;
+END_VAR
 VAR_OUTPUT
 	value	: UINT;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[get_User_calibration_gain:=_p_User_calibration_gain.get_value(value=>value, errId => );
-]]></ST>
+        <ST><![CDATA[get_User_calibration_gain:=_p_User_calibration_gain.get_value(value=>targ_value, errId => );
+IF get_User_calibration_gain THEN
+    MEMCPY(ADR(value), targ_value.pData, targ_value.cbLen);
+END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="get_User_calibration_offset" Id="{32dbbe99-4b0f-0c99-3cc8-ede93d249979}" FolderPath="config\">
       <Declaration><![CDATA[METHOD get_User_calibration_offset : BOOL
+VAR
+    targ_value : Tc2_Utilities.T_Arg;
+END_VAR
 VAR_OUTPUT
 	value	: INT;
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[get_User_calibration_offset:=_p_User_calibration_offset.get_value(value=>value, errId => );
-]]></ST>
+        <ST><![CDATA[get_User_calibration_offset:=_p_User_calibration_offset.get_value(value=>targ_value, errId => );
+IF get_User_calibration_offset THEN
+    MEMCPY(ADR(value), targ_value.pData, targ_value.cbLen);
+END_IF]]></ST>
       </Implementation>
     </Method>
     <Method Name="get_Watchdog" Id="{b8075401-7e9f-060b-3ed1-949acdcf1937}" FolderPath="config\">
       <Declaration><![CDATA[METHOD get_Watchdog : BOOL
+VAR
+	usint_value: USINT;
+    targ_value : Tc2_Utilities.T_Arg;
+END_VAR
 VAR_OUTPUT
 	value	: ENU_DT0800EN02;
-END_VAR
-
-VAR
-	tmp: USINT;
 END_VAR]]></Declaration>
       <Implementation>
-        <ST><![CDATA[get_Watchdog:=_p_Watchdog.get_value(value=>tmp, errId => );
-value := USINT_TO_INT(tmp);]]></ST>
+        <ST><![CDATA[get_Watchdog:=_p_Watchdog.get_value(value=>targ_value, errId => );
+IF get_Watchdog THEN
+    MEMCPY(ADR(usint_value), targ_value.pData, targ_value.cbLen);
+    value:=USINT_TO_INT(usint_value);
+END_IF]]></ST>
       </Implementation>
     </Method>
     <Property Name="io_status_Error" Id="{b301b5fa-842b-0581-1acf-871c72bcc9ae}" FolderPath="IO\">
@@ -515,7 +568,7 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[set_Default_output:=_p_Default_output.set_value(value:=value);
+        <ST><![CDATA[set_Default_output:=_p_Default_output.set_value(value:=Tc2_Utilities.F_INT(in:=value));
 ]]></ST>
       </Implementation>
     </Method>
@@ -526,7 +579,7 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[set_Default_output_ramp:=_p_Default_output_ramp.set_value(value:=value);
+        <ST><![CDATA[set_Default_output_ramp:=_p_Default_output_ramp.set_value(value:=Tc2_Utilities.F_UINT(in:=value));
 ]]></ST>
       </Implementation>
     </Method>
@@ -537,7 +590,7 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[set_Enable_user_calibration:=_p_Enable_user_calibration.set_value(value:=value);
+        <ST><![CDATA[set_Enable_user_calibration:=_p_Enable_user_calibration.set_value(value:=Tc2_Utilities.F_BOOL(in:=value));
 ]]></ST>
       </Implementation>
     </Method>
@@ -548,7 +601,7 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[set_Enable_user_scale:=_p_Enable_user_scale.set_value(value:=value);
+        <ST><![CDATA[set_Enable_user_scale:=_p_Enable_user_scale.set_value(value:=Tc2_Utilities.F_BOOL(in:=value));
 ]]></ST>
       </Implementation>
     </Method>
@@ -559,7 +612,7 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[set_Enable_vendor_calibration:=_p_Enable_vendor_calibration.set_value(value:=value);
+        <ST><![CDATA[set_Enable_vendor_calibration:=_p_Enable_vendor_calibration.set_value(value:=Tc2_Utilities.F_BOOL(in:=value));
 ]]></ST>
       </Implementation>
     </Method>
@@ -570,7 +623,7 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[set_Gain:=_p_Gain.set_value(value:=value);
+        <ST><![CDATA[set_Gain:=_p_Gain.set_value(value:=Tc2_Utilities.F_DINT(in:=value));
 ]]></ST>
       </Implementation>
     </Method>
@@ -581,7 +634,7 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[set_Offset:=_p_Offset.set_value(value:=value);
+        <ST><![CDATA[set_Offset:=_p_Offset.set_value(value:=Tc2_Utilities.F_INT(in:=value));
 ]]></ST>
       </Implementation>
     </Method>
@@ -592,7 +645,7 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[set_Presentation:=_p_Presentation.set_value(value:=INT_TO_USINT(value));
+        <ST><![CDATA[set_Presentation:=_p_Presentation.set_value(value:=Tc2_Utilities.F_USINT(in:=INT_TO_USINT(value)));
 ]]></ST>
       </Implementation>
     </Method>
@@ -603,7 +656,7 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[set_User_calibration_gain:=_p_User_calibration_gain.set_value(value:=value);
+        <ST><![CDATA[set_User_calibration_gain:=_p_User_calibration_gain.set_value(value:=Tc2_Utilities.F_UINT(in:=value));
 ]]></ST>
       </Implementation>
     </Method>
@@ -614,7 +667,7 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[set_User_calibration_offset:=_p_User_calibration_offset.set_value(value:=value);
+        <ST><![CDATA[set_User_calibration_offset:=_p_User_calibration_offset.set_value(value:=Tc2_Utilities.F_INT(in:=value));
 ]]></ST>
       </Implementation>
     </Method>
@@ -625,7 +678,7 @@ VAR_INPUT
 END_VAR
 ]]></Declaration>
       <Implementation>
-        <ST><![CDATA[set_Watchdog:=_p_Watchdog.set_value(value:=int_TO_USINT(value));
+        <ST><![CDATA[set_Watchdog:=_p_Watchdog.set_value(value:=Tc2_Utilities.F_USINT(in:=INT_TO_USINT(value)));
 ]]></ST>
       </Implementation>
     </Method>
