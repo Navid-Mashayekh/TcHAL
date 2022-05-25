@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.6">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
   <POU Name="EL3202_0010" Id="{dc64da8e-52ce-0127-3956-bc9ada04c25c}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK EL3202_0010 IMPLEMENTS I_terminal_execution
 VAR_INPUT
@@ -48,14 +48,14 @@ VAR
     _I_CoE_com_handler      : I_CoE_communication_handler;
     _CoE_prop_handler       : CoE_property_handler;
     // ====  CoE properties  ===========
-	_p_DeviceName 			: CoE_property_string(Index:=16#1008 , SubIndex:=0, writable:=FALSE, propertyType:=0, pollingInterval:=T#5S);
-	_p_DeviceType 			: CoE_property_udint(Index:=16#1000 , SubIndex:=0, writable:=FALSE, propertyType:=0, pollingInterval:=T#5S);
-	_p_ProductCode 			: CoE_property_udint(Index:=16#1018 , SubIndex:=2, writable:=FALSE, propertyType:=0, pollingInterval:=T#5S);
-	_p_Revision 			: CoE_property_udint(Index:=16#1018 , SubIndex:=3, writable:=FALSE, propertyType:=0, pollingInterval:=T#5S);
-	_p_SerialNumber 		: CoE_property_udint(Index:=16#1018 , SubIndex:=4, writable:=FALSE, propertyType:=0, pollingInterval:=T#5S);
-	_p_SoftwareVersion		: CoE_property_string(Index:=16#100A , SubIndex:=0, writable:=FALSE, propertyType:=0, pollingInterval:=T#5S);
-	_p_VendorId 			: CoE_property_udint(Index:=16#1018 , SubIndex:=1, writable:=FALSE, propertyType:=0, pollingInterval:=T#5S);
-	_p_HardwareVersion		: CoE_property_string(Index:=16#1009 , SubIndex:=0, writable:=FALSE, propertyType:=0, pollingInterval:=T#5S);
+	_p_DeviceName 			: CoE_property(Index:=16#1008 , SubIndex:=0,PropertyType:=Tc2_Utilities.ARGTYPE_STRING, writable:=FALSE, propertyPullMode:=0, pollingInterval:=T#5S);
+	_p_DeviceType 			: CoE_property(Index:=16#1000 , SubIndex:=0,PropertyType:=Tc2_Utilities.ARGTYPE_UDINT, writable:=FALSE, propertyPullMode:=0, pollingInterval:=T#5S);
+	_p_ProductCode 			: CoE_property(Index:=16#1018 , SubIndex:=2,PropertyType:=Tc2_Utilities.ARGTYPE_UDINT, writable:=FALSE, propertyPullMode:=0, pollingInterval:=T#5S);
+	_p_Revision 			: CoE_property(Index:=16#1018 , SubIndex:=3,PropertyType:=Tc2_Utilities.ARGTYPE_UDINT, writable:=FALSE, propertyPullMode:=0, pollingInterval:=T#5S);
+	_p_SerialNumber 		: CoE_property(Index:=16#1018 , SubIndex:=4,PropertyType:=Tc2_Utilities.ARGTYPE_UDINT, writable:=FALSE, propertyPullMode:=0, pollingInterval:=T#5S);
+	_p_SoftwareVersion		: CoE_property(Index:=16#100A , SubIndex:=0,PropertyType:=Tc2_Utilities.ARGTYPE_STRING, writable:=FALSE, propertyPullMode:=0, pollingInterval:=T#5S);
+	_p_VendorId 			: CoE_property(Index:=16#1018 , SubIndex:=1,PropertyType:=Tc2_Utilities.ARGTYPE_UDINT, writable:=FALSE, propertyPullMode:=0, pollingInterval:=T#5S);
+	_p_HardwareVersion		: CoE_property(Index:=16#1009 , SubIndex:=0,PropertyType:=Tc2_Utilities.ARGTYPE_STRING, writable:=FALSE, propertyPullMode:=0, pollingInterval:=T#5S);
 	// ==============
 	_properties  : ARRAY[1..8]OF I_CoE_property:=[
 		_p_DeviceName, _p_DeviceType, _p_ProductCode, _p_Revision, _p_SerialNumber, 

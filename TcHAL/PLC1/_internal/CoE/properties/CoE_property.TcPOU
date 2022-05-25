@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
   <POU Name="CoE_property" Id="{7290e4d7-edb9-0644-02c0-672d2dd6d3bf}" SpecialFunc="None">
-    <Declaration><![CDATA[FUNCTION_BLOCK ABSTRACT CoE_property IMPLEMENTS I_CoE_property
+    <Declaration><![CDATA[FUNCTION_BLOCK CoE_property IMPLEMENTS I_CoE_property
 VAR_INPUT
 END_VAR
 VAR_OUTPUT

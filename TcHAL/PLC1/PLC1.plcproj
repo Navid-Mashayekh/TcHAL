@@ -42,6 +42,9 @@
     <Compile Include="analog_input\voltage\EL3164.TcPOU">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="analog_input\_internal\AI_Channel.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="analog_input\_internal\AI_Voltage_Channel.TcPOU">
       <SubType>Code</SubType>
     </Compile>

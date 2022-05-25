@@ -1,0 +1,616 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.9">
+  <POU Name="AI_Channel" Id="{b4d2cd66-8265-045b-3567-dac29de6d80e}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AI_Channel
+VAR_INPUT
+	terminal_address		: WORD;
+	CoE_communication_handler	: I_CoE_communication_handler;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	_adc_min        : INT;
+    _adc_max        : INT;
+	_physical_min 	: INT;
+	_physical_max 	: INT;
+	_channel_number : UINT;
+	_wcState		: BOOL;
+	
+	// ===============================================================================
+	// CoE handling  
+    // ==============
+    _CoE_prop_handler      : CoE_property_handler;
+    _CoE_channel_offset     : INT;
+    index_1 				: WORD:= 16#8000 + INT_TO_WORD(_CoE_channel_offset);	
+    // ====  CoE properties  ===========
+	_p_Enable_user_scale    		: CoE_property(Index:=index_1 , SubIndex:=1, PropertyType:=Tc2_Utilities.ARGTYPE_BOOL, writable:=TRUE, propertyPullMode:=0, pollingInterval:=T#5S);
+	_p_Presentation 				: CoE_property(Index:=index_1 , SubIndex:=2, PropertyType:=Tc2_Utilities.ARGTYPE_USINT, writable:=TRUE, propertyPullMode:=0, pollingInterval:=T#5S);			// DT0800EN03
+	_p_Watchdog 					: CoE_property(Index:=index_1 , SubIndex:=5, PropertyType:=Tc2_Utilities.ARGTYPE_USINT, writable:=TRUE, propertyPullMode:=0, pollingInterval:=T#5S);			// DT0801EN02
+	_p_Enable_user_calibration  	: CoE_property(Index:=index_1 , SubIndex:=7, PropertyType:=Tc2_Utilities.ARGTYPE_BOOL, writable:=TRUE, propertyPullMode:=0, pollingInterval:=T#5S);
+	_p_Enable_vendor_calibration    : CoE_property(Index:=index_1 , SubIndex:=8, PropertyType:=Tc2_Utilities.ARGTYPE_BOOL, writable:=TRUE, propertyPullMode:=0, pollingInterval:=T#5S);
+	_p_Offset   					: CoE_property(Index:=index_1 , SubIndex:=17, PropertyType:=Tc2_Utilities.ARGTYPE_INT, writable:=TRUE, propertyPullMode:=0, pollingInterval:=T#5S);
+	_p_Gain 						: CoE_property(Index:=index_1 , SubIndex:=18, PropertyType:=Tc2_Utilities.ARGTYPE_DINT, writable:=TRUE, propertyPullMode:=0, pollingInterval:=T#5S);
+	_p_Default_output   			: CoE_property(Index:=index_1 , SubIndex:=19, PropertyType:=Tc2_Utilities.ARGTYPE_INT, writable:=TRUE, propertyPullMode:=0, pollingInterval:=T#5S);
+	_p_Default_output_ramp  		: CoE_property(Index:=index_1 , SubIndex:=20, PropertyType:=Tc2_Utilities.ARGTYPE_UINT, writable:=TRUE, propertyPullMode:=0, pollingInterval:=T#5S);
+	_p_User_calibration_offset  	: CoE_property(Index:=index_1 , SubIndex:=21, PropertyType:=Tc2_Utilities.ARGTYPE_INT, writable:=TRUE, propertyPullMode:=0, pollingInterval:=T#5S);
+	_p_User_calibration_gain    	: CoE_property(Index:=index_1 , SubIndex:=22, PropertyType:=Tc2_Utilities.ARGTYPE_UINT, writable:=TRUE, propertyPullMode:=0, pollingInterval:=T#5S);
+	// ==============
+	_properties  : ARRAY[1..11]OF I_CoE_property:=[
+		_p_Enable_user_scale, _p_Presentation, _p_Watchdog, _p_Enable_user_calibration, _p_Enable_vendor_calibration, _p_Offset,
+		_p_Gain, _p_Default_output, _p_Default_output_ramp, _p_User_calibration_offset, _p_User_calibration_gain];
+	// ===============================================================================
+    neg_wcState: f_trig;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// CoE Property handling 
+_CoE_prop_handler(terminal_address:=terminal_address, CoE_communication_handler:=CoE_communication_handler, CoE_properties:=_properties);
+
+neg_wcState(CLK:=_wcState);
+IF neg_wcState.Q THEN
+    ;
+END_IF]]></ST>
+    </Implementation>
+    <Folder Name="config" Id="{9421a353-d617-0c16-2cba-7713e5cdd398}" />
+    <Folder Name="IO" Id="{5a4c1ba1-4668-0b6b-2e48-df54d9fcb9db}" />
+    <Method Name="FB_init" Id="{5900896d-7f45-074b-1e48-d13078f429eb}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	bInitRetains 	: BOOL; // if TRUE, the retain variables are initialized (warm start / cold start)
+	bInCopyCode 	: BOOL;  // if TRUE, the instance afterwards gets moved into the copy code (online change)
+    adc_min         : INT;
+    adc_max         : INT;
+	physical_min 	: INT;
+	physical_max 	: INT;
+	channel_number  : UINT;
+END_VAR
+
+VAR
+	i: UINT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+_adc_min        := adc_min;
+_adc_max        := adc_max;
+_physical_min 	:= physical_min;
+_physical_max 	:= physical_max;
+_channel_number :=channel_number;
+
+CASE channel_number OF
+	1:
+		_CoE_channel_offset:=16#0;
+	2:
+		_CoE_channel_offset:=16#10;
+	3:
+		_CoE_channel_offset:=16#20;
+	4:
+		_CoE_channel_offset:=16#30;
+END_CASE
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="get_Default_output" Id="{1bdc70a6-c670-08f4-2815-ac711c0b4d5b}" FolderPath="config\">
+      <Declaration><![CDATA[METHOD get_Default_output : BOOL
+VAR
+    targ_value : Tc2_Utilities.T_Arg;
+END_VAR
+VAR_OUTPUT
+	value	: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[get_Default_output:=_p_Default_output.get_value(value=>targ_value, errId => );
+IF get_Default_output THEN
+    MEMCPY(ADR(value), targ_value.pData, targ_value.cbLen);
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="get_Default_output_ramp" Id="{55cb8b1e-7b88-0099-25fb-1b26626618a6}" FolderPath="config\">
+      <Declaration><![CDATA[METHOD get_Default_output_ramp : BOOL
+VAR
+    targ_value : Tc2_Utilities.T_Arg;
+END_VAR
+VAR_OUTPUT
+	value	: UINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[get_Default_output_ramp:=_p_Default_output_ramp.get_value(value=>targ_value, errId => );
+IF get_Default_output_ramp THEN
+    MEMCPY(ADR(value), targ_value.pData, targ_value.cbLen);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="get_Enable_user_calibration" Id="{70dec731-8494-09cf-37fe-d27f8d0926e5}" FolderPath="config\">
+      <Declaration><![CDATA[METHOD get_Enable_user_calibration : BOOL
+VAR
+    targ_value : Tc2_Utilities.T_Arg;
+END_VAR
+VAR_OUTPUT
+	value	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[get_Enable_user_calibration:=_p_Enable_user_calibration.get_value(value=>targ_value, errId => );
+IF get_Enable_user_calibration THEN
+    MEMCPY(ADR(value), targ_value.pData, targ_value.cbLen);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="get_Enable_user_scale" Id="{96ef0211-2330-05f9-0324-fb20d348258b}" FolderPath="config\">
+      <Declaration><![CDATA[METHOD get_Enable_user_scale : BOOL
+VAR
+    targ_value : Tc2_Utilities.T_Arg;
+END_VAR
+VAR_OUTPUT
+	value	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[get_Enable_user_scale:=_p_Enable_user_scale.get_value(value=>targ_value, errId => );
+IF get_Enable_user_scale THEN
+    MEMCPY(ADR(value), targ_value.pData, targ_value.cbLen);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="get_Enable_vendor_calibration" Id="{1fd99d90-30cb-060e-2af2-58fa4bef3d73}" FolderPath="config\">
+      <Declaration><![CDATA[METHOD get_Enable_vendor_calibration : BOOL
+VAR
+    targ_value : Tc2_Utilities.T_Arg;
+END_VAR
+VAR_OUTPUT
+	value	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[get_Enable_vendor_calibration:=_p_Enable_vendor_calibration.get_value(value=>targ_value, errId => );
+IF get_Enable_vendor_calibration THEN
+    MEMCPY(ADR(value), targ_value.pData, targ_value.cbLen);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="get_Gain" Id="{eea456f0-f892-0cbd-088a-d4d0984e2835}" FolderPath="config\">
+      <Declaration><![CDATA[METHOD get_Gain : BOOL
+VAR
+    targ_value : Tc2_Utilities.T_Arg;
+END_VAR
+VAR_OUTPUT
+	value	: DINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[get_Gain:=_p_Gain.get_value(value=>targ_value, errId => );
+IF get_Gain THEN
+    MEMCPY(ADR(value), targ_value.pData, targ_value.cbLen);
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="get_Offset" Id="{d9ccc899-ab40-070f-3537-37de1160846e}" FolderPath="config\">
+      <Declaration><![CDATA[METHOD get_Offset : BOOL
+VAR
+    targ_value : Tc2_Utilities.T_Arg;
+END_VAR
+VAR_OUTPUT
+	value	: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[get_Offset:=_p_Offset.get_value(value=>targ_value, errId => );
+IF get_Offset THEN
+    MEMCPY(ADR(value), targ_value.pData, targ_value.cbLen);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="get_Presentation" Id="{5e272834-ea30-0bc4-0ebe-006256c5e966}" FolderPath="config\">
+      <Declaration><![CDATA[METHOD get_Presentation : BOOL
+VAR
+	usint_value: USINT;
+    targ_value : Tc2_Utilities.T_Arg;
+END_VAR
+VAR_OUTPUT
+	value	: ENU_DT0801EN03;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[get_Presentation:=_p_Presentation.get_value(value=>targ_value, errId => );
+IF get_Presentation THEN
+    MEMCPY(ADR(usint_value), targ_value.pData, targ_value.cbLen);
+    value:=USINT_TO_INT(usint_value);
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="get_User_calibration_gain" Id="{67345e77-68bb-0f73-0d4d-5cf2a12c306c}" FolderPath="config\">
+      <Declaration><![CDATA[METHOD get_User_calibration_gain : BOOL
+VAR
+    targ_value : Tc2_Utilities.T_Arg;
+END_VAR
+VAR_OUTPUT
+	value	: UINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[get_User_calibration_gain:=_p_User_calibration_gain.get_value(value=>targ_value, errId => );
+IF get_User_calibration_gain THEN
+    MEMCPY(ADR(value), targ_value.pData, targ_value.cbLen);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="get_User_calibration_offset" Id="{d172811e-6a38-0215-2a48-abe50cc83540}" FolderPath="config\">
+      <Declaration><![CDATA[METHOD get_User_calibration_offset : BOOL
+VAR
+    targ_value : Tc2_Utilities.T_Arg;
+END_VAR
+VAR_OUTPUT
+	value	: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[get_User_calibration_offset:=_p_User_calibration_offset.get_value(value=>targ_value, errId => );
+IF get_User_calibration_offset THEN
+    MEMCPY(ADR(value), targ_value.pData, targ_value.cbLen);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="get_Watchdog" Id="{c0d5df51-6923-04bb-2051-3dbc4378752a}" FolderPath="config\">
+      <Declaration><![CDATA[METHOD get_Watchdog : BOOL
+VAR
+	usint_value: USINT;
+    targ_value : Tc2_Utilities.T_Arg;
+END_VAR
+VAR_OUTPUT
+	value	: ENU_DT0800EN02;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[get_Watchdog:=_p_Watchdog.get_value(value=>targ_value, errId => );
+IF get_Watchdog THEN
+    MEMCPY(ADR(usint_value), targ_value.pData, targ_value.cbLen);
+    value:=USINT_TO_INT(usint_value);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="io_status_Error" Id="{ca462cbb-0a4d-03bd-3de0-25bdbf3e9a81}" FolderPath="IO\">
+      <Declaration><![CDATA[PROPERTY io_status_Error : bool]]></Declaration>
+      <Get Name="Get" Id="{b8a80b64-bcf0-0c5d-1415-c8ddf784139b}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{3a09a50a-48a4-0d05-151c-2ca8dc91f9c1}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="io_status_Limit_1_greater_value" Id="{55eefebf-a3cc-0d40-2ba5-a9cc67d5edac}" FolderPath="IO\">
+      <Declaration><![CDATA[PROPERTY io_status_Limit_1_greater_value : bool]]></Declaration>
+      <Get Name="Get" Id="{231b80d4-048f-0b2f-356b-3a1dc3adecfc}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{e724ed13-6e1d-002a-0516-9dbc82cb2ae3}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="io_status_Limit_1_smaller_value" Id="{dc027d94-78c5-0e0c-2ef5-0775ba3ec50d}" FolderPath="IO\">
+      <Declaration><![CDATA[PROPERTY io_status_Limit_1_smaller_value : bool]]></Declaration>
+      <Get Name="Get" Id="{37cacf32-dfbb-0b14-1a79-942c44ada3bf}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{4970a771-c9d5-0c9b-2100-08ff2cd9656f}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="io_status_Limit_2_greater_value" Id="{54c81a6d-e79d-05ef-1fe0-42f8e698cc62}" FolderPath="IO\">
+      <Declaration><![CDATA[PROPERTY io_status_Limit_2_greater_value : bool]]></Declaration>
+      <Get Name="Get" Id="{e3c25165-805d-0eff-20a9-7bcc3534bf45}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{b0d3b1b2-95cc-0d0f-1254-f4b73327e236}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="io_status_Limit_2_smaller_value" Id="{a77d85b4-bf48-07b2-0470-256a1f800b7f}" FolderPath="IO\">
+      <Declaration><![CDATA[PROPERTY io_status_Limit_2_smaller_value : bool]]></Declaration>
+      <Get Name="Get" Id="{11cf6d62-9d98-0b21-1c7d-ac4032b95a66}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{374cec0e-a1a0-0624-04a8-d828d90ce5a5}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="io_status_Overrange" Id="{f34ba524-bee9-08ee-0fb6-4c843fc230ef}" FolderPath="IO\">
+      <Declaration><![CDATA[PROPERTY io_status_Overrange : bool]]></Declaration>
+      <Get Name="Get" Id="{3c424087-b806-044e-0124-7cae8f32544b}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{6f85bb93-9879-0ea3-1373-7deb901c784b}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="io_status_Sync_error" Id="{f98dda5f-d20d-0a7d-0651-93256ef725b8}" FolderPath="IO\">
+      <Declaration><![CDATA[PROPERTY io_status_Sync_error : bool]]></Declaration>
+      <Get Name="Get" Id="{ab5bc4f3-7794-065c-33dd-1e6c776c889d}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{1a894fe8-4822-0292-2b47-f395dcafe545}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="io_status_TxPDO_State" Id="{aa4f4f6b-909b-0b90-2711-0af729d499e9}" FolderPath="IO\">
+      <Declaration><![CDATA[PROPERTY io_status_TxPDO_State : bool]]></Declaration>
+      <Get Name="Get" Id="{52a3c638-e914-0e3c-0de7-b1b3706daa77}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{976f3e50-3c1c-0217-3714-29895fd3325d}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="io_status_TxPDO_Toggle" Id="{1bac7246-dcb5-0c59-2af1-b4c9892634d8}" FolderPath="IO\">
+      <Declaration><![CDATA[PROPERTY io_status_TxPDO_Toggle : bool]]></Declaration>
+      <Get Name="Get" Id="{6249567b-eb1e-0738-27e5-b53ed70bd780}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{0c2cda1d-db48-00a9-0b8e-d2abd26b7108}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Property Name="io_status_Underrange" Id="{8645b435-eb2e-00f8-126f-cde1ddb154f5}" FolderPath="IO\">
+      <Declaration><![CDATA[PROPERTY io_status_Underrange : bool]]></Declaration>
+      <Get Name="Get" Id="{ccb917e0-97b1-0872-2d06-0819364b71bc}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{f50b542a-ec94-0cb6-3217-d40fc12eb0ac}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+    <Method Name="set_Default_output" Id="{97f3bad6-b94f-061f-01c8-71948a865cd0}" FolderPath="config\">
+      <Declaration><![CDATA[METHOD set_Default_output : BOOL
+VAR_INPUT
+	value	: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[set_Default_output:=_p_Default_output.set_value(value:=Tc2_Utilities.F_INT(in:=value));
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="set_Default_output_ramp" Id="{686521f8-228f-0621-28ab-b7ad23e79255}" FolderPath="config\">
+      <Declaration><![CDATA[METHOD set_Default_output_ramp : BOOL
+VAR_INPUT
+	value	: UINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[set_Default_output_ramp:=_p_Default_output_ramp.set_value(value:=Tc2_Utilities.F_UINT(in:=value));
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="set_Enable_user_calibration" Id="{a0011ca8-3f3b-0c9b-31c9-e56e4658b922}" FolderPath="config\">
+      <Declaration><![CDATA[METHOD set_Enable_user_calibration : BOOL
+VAR_INPUT
+	value	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[set_Enable_user_calibration:=_p_Enable_user_calibration.set_value(value:=Tc2_Utilities.F_BOOL(in:=value));
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="set_Enable_user_scale" Id="{07fa8ad9-b0cc-08b3-0cf8-8e100f8be5ea}" FolderPath="config\">
+      <Declaration><![CDATA[METHOD set_Enable_user_scale : BOOL
+VAR_INPUT
+	value	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[set_Enable_user_scale:=_p_Enable_user_scale.set_value(value:=Tc2_Utilities.F_BOOL(in:=value));
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="set_Enable_vendor_calibration" Id="{6fa3b086-f41e-064e-0cdf-ea7e5ca5447c}" FolderPath="config\">
+      <Declaration><![CDATA[METHOD set_Enable_vendor_calibration : BOOL
+VAR_INPUT
+	value	: BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[set_Enable_vendor_calibration:=_p_Enable_vendor_calibration.set_value(value:=Tc2_Utilities.F_BOOL(in:=value));
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="set_Gain" Id="{d4fb0c32-804c-0a75-01c7-b23727a7d667}" FolderPath="config\">
+      <Declaration><![CDATA[METHOD set_Gain : BOOL
+VAR_INPUT
+	value	: DINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[set_Gain:=_p_Gain.set_value(value:=Tc2_Utilities.F_DINT(in:=value));
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="set_Offset" Id="{289bb0fe-9052-065a-1f65-a47f2098d5ac}" FolderPath="config\">
+      <Declaration><![CDATA[METHOD set_Offset : BOOL
+VAR_INPUT
+	value	: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[set_Offset:=_p_Offset.set_value(value:=Tc2_Utilities.F_INT(in:=value));
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="set_Presentation" Id="{62914601-a043-0b47-3359-99812004a0e1}" FolderPath="config\">
+      <Declaration><![CDATA[METHOD set_Presentation : BOOL
+VAR_INPUT
+	value	: ENU_DT0801EN03;
+END_VAR
+VAR
+    usint_value : USINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[usint_value := INT_TO_USINT(value);
+set_Presentation:=_p_Presentation.set_value(value:=Tc2_Utilities.F_USINT(in:=usint_value));
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="set_User_calibration_gain" Id="{3e971cbe-d6a0-0ca8-0a01-6dafb713b029}" FolderPath="config\">
+      <Declaration><![CDATA[METHOD set_User_calibration_gain : BOOL
+VAR_INPUT
+	value	: UINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[set_User_calibration_gain:=_p_User_calibration_gain.set_value(value:=Tc2_Utilities.F_UINT(in:=value));
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="set_User_calibration_offset" Id="{72313c66-95ca-0fa9-1953-548a80f94d2d}" FolderPath="config\">
+      <Declaration><![CDATA[METHOD set_User_calibration_offset : BOOL
+VAR_INPUT
+	value	: INT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[set_User_calibration_offset:=_p_User_calibration_offset.set_value(value:=Tc2_Utilities.F_INT(in:=value));
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="set_Watchdog" Id="{b0b620d8-f133-04da-220f-e9ac83363cc6}" FolderPath="config\">
+      <Declaration><![CDATA[METHOD set_Watchdog : BOOL
+VAR_INPUT
+	value	: ENU_DT0800EN02;
+END_VAR
+VAR
+    usint_value : USINT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[usint_value := INT_TO_USINT(value);
+set_Watchdog:=_p_Watchdog.set_value(value:=Tc2_Utilities.F_USINT(in:=usint_value));
+]]></ST>
+      </Implementation>
+    </Method>
+    <Property Name="wcState" Id="{23057b83-8ff2-059b-0c3b-4b05dc20d71a}" FolderPath="IO\">
+      <Declaration><![CDATA[PROPERTY wcState : bool]]></Declaration>
+      <Get Name="Get" Id="{4e99faea-b922-09d6-0ff3-498a2744b0eb}">
+        <Declaration><![CDATA[
+VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[wcState:=_wcState;
+]]></ST>
+        </Implementation>
+      </Get>
+      <Set Name="Set" Id="{7982eedb-35e6-0d3d-23eb-be9cbc91c357}">
+        <Declaration><![CDATA[VAR
+END_VAR
+]]></Declaration>
+        <Implementation>
+          <ST><![CDATA[_wcState:=wcState;
+]]></ST>
+        </Implementation>
+      </Set>
+    </Property>
+  </POU>
+</TcPlcObject>
